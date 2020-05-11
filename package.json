@@ -1,0 +1,23 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "traning",
+  "main": "index.js",
+  "scripts": {
+    "start": "",
+    "test": "echo hello"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DimaBeley/Backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/DimaBeley/Backend/issues"
+  },
+  "homepage": "https://github.com/DimaBeley/Backend#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
+}
