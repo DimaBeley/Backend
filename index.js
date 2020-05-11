@@ -8,7 +8,8 @@ app.get('/hello', (req, res) => res.send({message: 'Hello World!'}))
 app.get('/dog', (req, res) => {
   fs.readFile(`${__dirname}/public/dog.png`, (err, data) => {
     if (err) throw err;
-    res.write(data)
+    res.setHeader('Content-Type', 'image/png')
+    return res.write(data)
   });
 })
 
