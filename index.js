@@ -3,8 +3,18 @@ const express = require('express')
 const fetch = require('node-fetch')
 const sharp = require('sharp')
 const fs = require('fs')
+const md5 = require('md5');
 const app = express()
 const port = 7000
+
+const cacheWrapper = (filename, cb) => {
+  fs.writeFile(`${__dirname}/cache/web/${filename}.txt`, 'Hey there! test', function(err) {
+    if(err) {
+      return console.log(err);
+    }
+    console.log("The file was saved!");
+  });
+}
 
 app.use(bodyParser.urlencoded({ extended: false }))
 app.use(bodyParser.json())
@@ -18,6 +28,7 @@ app.get('/dog', (req, res) => {
     res.write(data)
     return res.end('')
   })
+  cacheWrapper('test')
 })
 
 app.post('/threshold', async (req, res) => {
@@ -37,15 +48,7 @@ app.post('/threshold', async (req, res) => {
 })
 
 app.get('/threshold', (req, res) => {
-  res.write('<div style="margin: 100px;">\n' +
-      '  <span style="color: darkseagreen">http://10.10.10.10:7000/dog</span> - dog example\n' +
-      '  <form action="//10.10.10.10:7000/threshold" method="post">\n' +
-      '    <input type="number" placeholder="threshold" name="threshold"><br>\n' +
-      '    <input type="text" placeholder="URL" name="url"><br>\n' +
-      '    <input type="submit" value="Submit">\n' +
-      '  </form>\n' +
-      '</div>')
-  res.end('')
+  res.sendFile(`${__dirname}/index.html`)
 })
 
 
