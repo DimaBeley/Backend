@@ -15,25 +15,37 @@ app.get('/dog', (req, res) => {
   fs.readFile(`${__dirname}/public/dog.png`, (err, data) => {
     if (err) throw err
     res.setHeader('Content-Type', 'image/png')
-    return res.write(data)
+    res.write(data)
+    return res.end('')
   })
 })
 
-app.post('/threshold', (req, res) => {
+app.post('/threshold', async (req, res) => {
   console.log('start')
   const { threshold, url } = req.body
-  let formated = 'test'
-  res.setHeader('Content-Type', 'image/png')
-  fetch(url)
+  await fetch(url)
       .then(data => data.buffer())
       .then(buffer => sharp(buffer).threshold(+threshold).toBuffer())
-      .then(sharped => formated = sharped)
+      .then(sharped => {
+       res.writeHead(200, {
+          'Content-Length': Buffer.byteLength(sharped),
+          'Content-Type': 'image/png'
+        })
+        return res.end(sharped)
+      })
       .catch(e => console.log(e, 'error'))
-  res.end(formated)
 })
 
 app.get('/threshold', (req, res) => {
-  res.sendFile(`${__dirname}/index.html`)
+  res.write('<div style="margin: 100px;">\n' +
+      '  <span style="color: darkseagreen">http://10.10.10.10:7000/dog</span> - dog example\n' +
+      '  <form action="//10.10.10.10:7000/threshold" method="post">\n' +
+      '    <input type="number" placeholder="threshold" name="threshold"><br>\n' +
+      '    <input type="text" placeholder="URL" name="url"><br>\n' +
+      '    <input type="submit" value="Submit">\n' +
+      '  </form>\n' +
+      '</div>')
+  res.end('')
 })
 
 
