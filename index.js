@@ -6,13 +6,30 @@ const fs = require('fs')
 const md5 = require('md5');
 const app = express()
 const port = 7000
+const cachePath = `${__dirname}/cache`
 
-const cacheWrapper = (filename, cb) => {
-  fs.writeFile(`${__dirname}/cache/web/${filename}.txt`, 'Hey there! test', function(err) {
-    if(err) {
+const cacheWrapper = (filename, path, cb) => {
+  return new Promise((resolve, reject) => {
+    const filePath = `${cachePath}/${path}/${filename}.png`
+
+    fs.readFile(filePath, (err, data) => {
+      if (err) {
+        cb();
+        return reject(err)
+      }
+      resolve(data)
+    })
+  })
+}
+
+const saveFile = (name, path, file) => {
+  const fullPath = `${cachePath}/${path}/${name}.png`
+
+  fs.writeFile(fullPath, file, (err) => {
+    if (err) {
       return console.log(err);
     }
-    console.log("The file was saved!");
+    console.log(`The file was saved to cache/${path} !`)
   });
 }
 
@@ -25,26 +42,58 @@ app.get('/dog', (req, res) => {
   fs.readFile(`${__dirname}/public/dog.png`, (err, data) => {
     if (err) throw err
     res.setHeader('Content-Type', 'image/png')
-    res.write(data)
-    return res.end('')
+    return res.end(data)
   })
-  cacheWrapper('test')
 })
 
-app.post('/threshold', async (req, res) => {
-  console.log('start')
+app.post('/threshold', (req, res) => {
   const { threshold, url } = req.body
-  await fetch(url)
+  const hashUrl = md5(url)
+  const hashThreshold = md5(`${hashUrl}${+threshold}`)
+
+  cacheWrapper(hashUrl, 'web', () => fetch(url)
       .then(data => data.buffer())
-      .then(buffer => sharp(buffer).threshold(+threshold).toBuffer())
+      .then(buffer => {
+        saveFile(hashUrl, 'web', buffer)
+
+        return sharp(buffer).threshold(+threshold).toBuffer()
+      })
       .then(sharped => {
-       res.writeHead(200, {
+        saveFile(hashThreshold, 'threshold', sharped)
+        res.writeHead(200, {
           'Content-Length': Buffer.byteLength(sharped),
           'Content-Type': 'image/png'
         })
+
         return res.end(sharped)
       })
       .catch(e => console.log(e, 'error'))
+  )
+    .then((data) => { // png from cache
+      cacheWrapper(hashThreshold, 'threshold', () => {
+        sharp(data).threshold(+threshold).toBuffer()
+            .then(data => {
+              saveFile(hashThreshold, 'threshold', data)
+              res.writeHead(200, {
+                'Content-Length': Buffer.byteLength(data),
+                'Content-Type': 'image/png'
+              })
+
+              return res.end(data)
+            }).catch(e => console.log(e, 'ERROR'))
+      })
+          .then(data => { // png with threshold from cache
+            res.writeHead(200, {
+              'Content-Length': Buffer.byteLength(data),
+              'Content-Type': 'image/png'
+            })
+
+            return res.end(data)
+          })
+          .catch(e => console.log(e, 'ERRPR'))
+
+    })
+      .catch(e => console.log(e, 'ERROR'))
 })
 
 app.get('/threshold', (req, res) => {
@@ -52,4 +101,4 @@ app.get('/threshold', (req, res) => {
 })
 
 
-app.listen(port, () => console.log(`App listening at http://10.10.10.10:${port}`))
+app.listen(port, () => console.log(`App listening at http://127.0.0.1:${port}`))
